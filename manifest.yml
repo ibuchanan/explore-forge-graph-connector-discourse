@@ -20,6 +20,10 @@ modules:
         light: https://developer.atlassian.com/platform/forge/images/icons/issue-panel-icon.svg
       objectTypes:
         - atlassian:conversation
+        - atlassian:message
+  function:
+    - key: onConnectionChange
+      handler: index.onConnectionChange
 permissions:
   external:
     fetch:

@@ -32,3 +32,4 @@ yarn-error.log*
 .turbo/
 /.cocoindex_code/
 .scratch/
+/src/discourse/api/

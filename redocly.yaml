@@ -1,0 +1,6 @@
+# https://openapi-ts.dev/introduction
+apis:
+  discourse:
+    root: https://raw.githubusercontent.com/discourse/discourse_api_docs/main/openapi.json
+    x-openapi-ts:
+      output: ./src/discourse/api/types.ts

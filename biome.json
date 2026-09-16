@@ -8,7 +8,14 @@
   },
   "files": {
     "ignoreUnknown": false,
-    "includes": ["**", "!.projen", "!vendor", "!coverage", "!dist"]
+    "includes": [
+      "**",
+      "!.projen",
+      "!vendor",
+      "!coverage",
+      "!dist",
+      "!src/discourse/api"
+    ]
   },
   "formatter": {
     "enabled": true,

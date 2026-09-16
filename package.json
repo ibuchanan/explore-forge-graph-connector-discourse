@@ -4,10 +4,10 @@
   "private": true,
   "license": "Apache-2.0",
   "scripts": {
-    "build": "tsc -p tsconfig.json",
+    "build": "npm run generate:types && tsc -p tsconfig.json",
     "changelog": "git cliff",
     "check": "lefthook run pre-push",
-    "clean": "rm -rf ./node_modules ./dist",
+    "clean": "rm -rf ./node_modules ./dist ./src/discourse/api",
     "dev": "tsc -p tsconfig.json --watch",
     "forge:deploy": "secretspec run --reason \"npm run forge:deploy\" -- sh -c 'forge deploy --environment \"$FORGE_ENVIRONMENT\"'",
     "forge:install": "secretspec run --reason \"npm run forge:install\" -- sh -c 'forge install --site \"$SCG_SOURCE_SITE\" --product \"$FORGE_PRODUCT\" --environment \"$FORGE_ENVIRONMENT\" --non-interactive && forge install --site \"$SCG_DESTINATION_SITE\" --product \"$FORGE_PRODUCT\" --environment \"$FORGE_ENVIRONMENT\" --non-interactive'",
@@ -20,6 +20,7 @@
     "forge:variables:generate-shared-secret": "bash scripts/set-shared-secret.sh",
     "forge:variables:set-encrypted": "secretspec run --reason \"npm run forge:variables:set-encrypted\" -- sh -c 'forge variables set --encrypt --environment \"$FORGE_ENVIRONMENT\" \"$@\"' _",
     "format": "biome format --write",
+    "generate:types": "openapi-typescript",
     "format:check": "biome format",
     "lint": "lefthook run lint",
     "lint:check": "biome lint",
@@ -37,7 +38,9 @@
   "dependencies": {
     "@forge-ahead/errors": "github:ibuchanan/forge-ahead-errors",
     "@forge-ahead/logging": "github:ibuchanan/forge-ahead-logging",
-    "@forge/teamwork-graph": "^5.2"
+    "@forge/api": "^8.1",
+    "@forge/teamwork-graph": "^5.2",
+    "openapi-fetch": "^0.17"
   },
   "devDependencies": {
     "@ast-grep/cli": "^0.45",
@@ -48,6 +51,7 @@
     "archunit": "^2.5",
     "git-cliff": "^2.13",
     "lefthook": "^2.1",
+    "openapi-typescript": "^7.13",
     "size-limit": "^14.0",
     "typescript": "^5.9",
     "vitest": "^5.0",

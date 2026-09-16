@@ -1,0 +1,9 @@
+[submodule "vendor/explore-forge-config-lifecycle"]
+	path = vendor/explore-forge-config-lifecycle
+	url = https://github.com/ibuchanan/explore-forge-config-lifecycle.git
+[submodule "vendor/explore-forge-jira-custom-api"]
+	path = vendor/explore-forge-jira-custom-api
+	url = https://github.com/ibuchanan/explore-forge-jira-custom-api.git
+[submodule "vendor/explore-forge-action-admin-assignment"]
+	path = vendor/explore-forge-action-admin-assignment
+	url = https://github.com/ibuchanan/explore-forge-action-admin-assignment.git

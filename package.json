@@ -1,8 +1,68 @@
 {
-  "name": "rovo-agent-rovo",
-  "version": "1.2.3",
-  "description": "a sample forge app with rovo-agent module",
-  "main": "index.js",
+  "name": "explore-forge-graph-connector-discourse",
+  "version": "0.0.0",
   "private": true,
-  "license": "MIT"
+  "license": "Apache-2.0",
+  "scripts": {
+    "build": "tsc -p tsconfig.json",
+    "changelog": "git cliff",
+    "check": "lefthook run pre-push",
+    "clean": "rm -rf ./node_modules ./dist",
+    "dev": "tsc -p tsconfig.json --watch",
+    "forge:deploy": "secretspec run --reason \"npm run forge:deploy\" -- sh -c 'forge deploy --environment \"$FORGE_ENVIRONMENT\"'",
+    "forge:install": "secretspec run --reason \"npm run forge:install\" -- sh -c 'forge install --site \"$SCG_SOURCE_SITE\" --product \"$FORGE_PRODUCT\" --environment \"$FORGE_ENVIRONMENT\" --non-interactive && forge install --site \"$SCG_DESTINATION_SITE\" --product \"$FORGE_PRODUCT\" --environment \"$FORGE_ENVIRONMENT\" --non-interactive'",
+    "forge:logs": "forge logs | sd \"^[^{]*\" \"\" | jq .",
+    "forge:register": "forge register",
+    "forge:uninstall": "secretspec run --reason \"npm run forge:uninstall\" -- bash scripts/forge-uninstall-both.sh",
+    "forge:upgrade": "secretspec run --reason \"npm run forge:upgrade\" -- sh -c 'forge install --upgrade --site \"$SCG_SOURCE_SITE\" --product \"$FORGE_PRODUCT\" --environment \"$FORGE_ENVIRONMENT\" --non-interactive && forge install --upgrade --site \"$SCG_DESTINATION_SITE\" --product \"$FORGE_PRODUCT\" --environment \"$FORGE_ENVIRONMENT\" --non-interactive'",
+    "forge:variables:set": "secretspec run --reason \"npm run forge:variables:set\" -- sh -c 'forge variables set --environment \"$FORGE_ENVIRONMENT\" \"$@\"' _",
+    "forge:variables:set:secretspec": "./scripts/forge-vars-from-secretspec.sh",
+    "forge:variables:generate-shared-secret": "bash scripts/set-shared-secret.sh",
+    "forge:variables:set-encrypted": "secretspec run --reason \"npm run forge:variables:set-encrypted\" -- sh -c 'forge variables set --encrypt --environment \"$FORGE_ENVIRONMENT\" \"$@\"' _",
+    "format": "biome format --write",
+    "format:check": "biome format",
+    "lint": "lefthook run lint",
+    "lint:check": "biome lint",
+    "lint:fix": "biome lint --write",
+    "lint:forge": "forge lint",
+    "lint:prelint": "ast-grep scan --config node_modules/@forge-ahead/prelint/sgconfig.ecosol.yml --globs '!node_modules/**' --globs '!vendor/**'",
+    "prepare": "lefthook install",
+    "size": "npm run build && size-limit",
+    "test": "vitest run",
+    "test:coverage": "vitest run --coverage",
+    "test:watch": "vitest watch",
+    "todo": "rg --glob '!vendor/**' --glob '!package.json' 'TODO' || echo 'No TODOs found!'",
+    "typecheck": "tsc -p tsconfig.typecheck.json --noEmit"
+  },
+  "dependencies": {
+    "@forge-ahead/errors": "github:ibuchanan/forge-ahead-errors",
+    "@forge-ahead/logging": "github:ibuchanan/forge-ahead-logging",
+    "@forge/teamwork-graph": "^5.2"
+  },
+  "devDependencies": {
+    "@ast-grep/cli": "^0.45",
+    "@biomejs/biome": "2.5.13",
+    "@forge-ahead/prelint": "github:ibuchanan/tool-forge-prelint-ast-grep",
+    "@size-limit/file": "^14.0",
+    "@types/node": "24",
+    "archunit": "^2.5",
+    "git-cliff": "^2.13",
+    "lefthook": "^2.1",
+    "size-limit": "^14.0",
+    "typescript": "^5.9",
+    "vitest": "^5.0",
+    "yaml": "^2.9"
+  },
+  "engines": {
+    "node": "24.x"
+  },
+  "size-limit": [
+    {
+      "name": "Forge app bundle",
+      "path": [
+        "dist/**/*.js"
+      ],
+      "limit": "10 kB"
+    }
+  ]
 }

@@ -1,0 +1,41 @@
+colors: false
+output:
+  - meta
+  - summary
+  - failure
+
+lint:
+  parallel: true
+  commands:
+    prelint:
+      run: npm run lint:prelint
+    biome:
+      run: npm run lint:check
+    forge:
+      run: npm run lint:forge
+    typecheck:
+      run: npm run typecheck
+
+pre-commit:
+  parallel: true
+  commands:
+    gitleaks:
+      run: |
+        command -v gitleaks >/dev/null 2>&1 || {
+          echo "gitleaks not found on PATH. Install it with: brew install gitleaks" >&2
+          exit 1
+        }
+        gitleaks git --pre-commit --staged
+    format:
+      run: npm run format
+      stage_fixed: true
+
+pre-push:
+  parallel: true
+  commands:
+    format:
+      run: npm run format:check
+    lint:
+      run: npm run lint
+    test:
+      run: npm run test

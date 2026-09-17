@@ -143,6 +143,10 @@ export async function onConnectionChange(
 
   const baseUrl = discourseBaseUrl();
   if (baseUrl.isErr()) return { success: false, error: baseUrl.error };
+  log.info(
+    { connectionId: connection.value.connectionId, baseUrl: baseUrl.value },
+    "Discourse connection URL parsed",
+  );
   const site = await fromPromise(
     createDiscourseClient(baseUrl.value).GET("/site.json"),
     (error) =>
@@ -227,8 +231,8 @@ export async function taskRunner(
         page,
       });
   logResult(log, synced, {
-    successMessage: "Discourse crawl task page succeeded",
-    errorMessage: "Discourse crawl task page failed",
+    successMessage: "Discourse topic pagination succeeded",
+    errorMessage: "Discourse topic pagination failed",
     summarizeOk: (progress) => ({
       connectionId: request.connectionId,
       page,
@@ -276,7 +280,9 @@ export async function taskRunner(
         completed,
         ...cumulativeProgress,
       },
-      completed ? "Discourse crawl completed" : "Discourse crawl progress",
+      completed
+        ? "Discourse topic crawl completed"
+        : "Discourse topic crawl progress",
     );
     advanced = await fromPromise(
       kvs.set(

@@ -58,7 +58,7 @@ export async function syncTopics({
   baseUrl: string;
   page: number;
 }): Promise<Result<SyncProgress, ProblemDetails>> {
-  log.info({ connectionId, page }, "Discourse crawl page started");
+  log.info({ connectionId, page }, "Discourse topic pagination started");
   const latestTopics = await fromPromise(
     source.listLatestTopics(page),
     (error) =>
@@ -105,9 +105,9 @@ export async function syncTopics({
     topics.push(topic.value.value);
     objects.push(...mappedTopic.value);
   }
-  if (objects.length > 0) {
+  for (let start = 0; start < objects.length; start += 100) {
     const published = await fromPromise(
-      publish(connectionId, objects),
+      publish(connectionId, objects.slice(start, start + 100)),
       (error) =>
         toProblemDetails(error, 502, "Could not publish Discourse topics"),
     );
@@ -130,7 +130,7 @@ export async function syncTopics({
       ...progress,
       skippedTopicIds: skippedTopicIds.slice(0, 10),
     },
-    "Discourse crawl page completed",
+    "Discourse topic pagination completed",
   );
   return ok(progress);
 }

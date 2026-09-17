@@ -35,7 +35,7 @@ const sync = (source: Parameters<typeof syncTopics>[0]["source"]) =>
   });
 
 describe("syncTopics", () => {
-  it("fetches one source page and publishes its conversations and messages as one batch", async () => {
+  it("fetches one topic page and publishes its topics and posts as one batch", async () => {
     const source = {
       listLatestTopics: vi.fn(async () => ok({ ids: [123], hasMore: true })),
       getTopic: vi.fn(async () => ok(topic)),
@@ -65,6 +65,42 @@ describe("syncTopics", () => {
     expect(publish).toHaveBeenCalledWith("connection-123", [
       expect.objectContaining({ id: "topic:123" }),
       expect.objectContaining({ id: "post:456" }),
+    ]);
+  });
+
+  it("splits more than 100 objects into permitted bulk ingestion batches", async () => {
+    const topics = Array.from({ length: 51 }, (_, index) => ({
+      ...topic,
+      id: index + 1,
+      posts: [{ ...topic.posts[0], id: index + 1 }],
+    }));
+    const topicsById = new Map(topics.map((topic) => [topic.id, topic]));
+    const source = {
+      listLatestTopics: vi.fn(async () =>
+        ok({ ids: topics.map(({ id }) => id), hasMore: false }),
+      ),
+      getTopic: vi.fn(async (id: number) => ok(topicsById.get(id) ?? topic)),
+    };
+    const publish = vi.fn(async () => ok(undefined));
+
+    expect(
+      expectOk(
+        await syncTopics({
+          source,
+          publish,
+          connectionId: "connection-123",
+          baseUrl: "https://community.example.com/",
+          page: 2,
+        }),
+      ),
+    ).toMatchObject({ publishedObjects: 102 });
+    expect(publish).toHaveBeenCalledTimes(2);
+    expect(publish.mock.calls.map(([, objects]) => objects)).toEqual([
+      expect.arrayContaining([expect.objectContaining({ id: "topic:1" })]),
+      expect.arrayContaining([expect.objectContaining({ id: "post:51" })]),
+    ]);
+    expect(publish.mock.calls.map(([, objects]) => objects.length)).toEqual([
+      100, 2,
     ]);
   });
 

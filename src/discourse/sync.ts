@@ -1,27 +1,9 @@
 import type { types } from "@forge/teamwork-graph";
-import {
-  err,
-  fromPromise,
-  ok,
-  type ProblemDetails,
-  type Result,
-  toProblemDetails,
-} from "@forge-ahead/errors";
+import { err, ok, type ProblemDetails, type Result } from "@forge-ahead/errors";
 import { log } from "@forge-ahead/logging";
 
-import { mapTopic, type Topic } from "./map-topic";
-
-export type TopicPage = { ids: number[]; hasMore: boolean };
-
-type TopicSource = {
-  listLatestTopics(page: number): Promise<Result<TopicPage, ProblemDetails>>;
-  getTopic(id: number): Promise<Result<Topic, ProblemDetails>>;
-};
-
-type TopicPublisher = (
-  connectionId: string,
-  objects: types.Object[],
-) => Promise<Result<void, ProblemDetails>>;
+import { mapTopic } from "./map-topic";
+import type { Topic, TopicPublisher, TopicSource } from "./topic-source";
 
 export type SyncProgress = {
   discoveredTopics: number;
@@ -59,21 +41,14 @@ export async function syncTopics({
   page: number;
 }): Promise<Result<SyncProgress, ProblemDetails>> {
   log.info({ connectionId, page }, "Discourse topic pagination started");
-  const latestTopics = await fromPromise(
-    source.listLatestTopics(page),
-    (error) =>
-      toProblemDetails(error, 502, "Could not list latest Discourse topics"),
-  );
+  const latestTopics = await source.listLatestTopics(page);
   if (latestTopics.isErr()) return err(latestTopics.error);
-  if (latestTopics.value.isErr()) return err(latestTopics.value.error);
 
   const topics: Topic[] = [];
   const objects: types.Object[] = [];
   const skippedTopicIds: number[] = [];
-  for (const id of latestTopics.value.value.ids) {
-    const topic = await fromPromise(source.getTopic(id), (error) =>
-      toProblemDetails(error, 502, `Could not get Discourse topic ${id}`),
-    );
+  for (const id of latestTopics.value.ids) {
+    const topic = await source.getTopic(id);
     if (topic.isErr()) {
       if (topic.error.status === 429) return err(topic.error);
       skippedTopicIds.push(id);
@@ -83,17 +58,8 @@ export async function syncTopics({
       );
       continue;
     }
-    if (topic.value.isErr()) {
-      if (topic.value.error.status === 429) return err(topic.value.error);
-      skippedTopicIds.push(id);
-      log.warn(
-        { connectionId, page, topicId: id, status: topic.value.error.status },
-        "Discourse topic skipped after fetch failure",
-      );
-      continue;
-    }
 
-    const mappedTopic = mapTopic(topic.value.value, baseUrl);
+    const mappedTopic = mapTopic(topic.value, baseUrl);
     if (mappedTopic.isErr()) {
       skippedTopicIds.push(id);
       log.warn(
@@ -102,25 +68,23 @@ export async function syncTopics({
       );
       continue;
     }
-    topics.push(topic.value.value);
+    topics.push(topic.value);
     objects.push(...mappedTopic.value);
   }
   for (let start = 0; start < objects.length; start += 100) {
-    const published = await fromPromise(
-      publish(connectionId, objects.slice(start, start + 100)),
-      (error) =>
-        toProblemDetails(error, 502, "Could not publish Discourse topics"),
+    const published = await publish(
+      connectionId,
+      objects.slice(start, start + 100),
     );
     if (published.isErr()) return err(published.error);
-    if (published.value.isErr()) return err(published.value.error);
   }
 
   const progress: SyncProgress = {
-    discoveredTopics: latestTopics.value.value.ids.length,
+    discoveredTopics: latestTopics.value.ids.length,
     publishedTopics: topics.length,
     publishedObjects: objects.length,
     skippedTopics: skippedTopicIds.length,
-    hasMore: latestTopics.value.value.hasMore,
+    hasMore: latestTopics.value.hasMore,
     ...temporalCoverage(topics),
   };
   log.info(

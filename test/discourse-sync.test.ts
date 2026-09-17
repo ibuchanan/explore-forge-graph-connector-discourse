@@ -2,8 +2,8 @@ import { err, ok, problemDetails } from "@forge-ahead/errors";
 import { expectErr, expectOk } from "@forge-ahead/errors/testing";
 import { describe, expect, it, vi } from "vitest";
 
-import type { Topic } from "../src/discourse/map-topic";
 import { syncTopics } from "../src/discourse/sync";
+import type { Topic, TopicSource } from "../src/discourse/topic-source";
 
 const topic: Topic = {
   id: 123,
@@ -25,7 +25,7 @@ const topic: Topic = {
   ],
 };
 
-const sync = (source: Parameters<typeof syncTopics>[0]["source"]) =>
+const sync = (source: TopicSource) =>
   syncTopics({
     source,
     publish: vi.fn(async () => ok(undefined)),
@@ -131,5 +131,16 @@ describe("syncTopics", () => {
     };
 
     expect(expectErr(await sync(source))).toMatchObject({ status: 429 });
+  });
+
+  it("propagates a source rejection because TopicSource methods must not throw", async () => {
+    const source = {
+      listLatestTopics: vi.fn(async () => {
+        throw new Error("network failure");
+      }),
+      getTopic: vi.fn(async () => ok(topic)),
+    };
+
+    await expect(sync(source)).rejects.toThrow("network failure");
   });
 });

@@ -6,36 +6,10 @@ import {
   StandardError,
 } from "@forge-ahead/errors";
 
-import type { operations } from "./api/types";
+import type { Topic } from "./topic-source";
 
 type ConversationObject = types.ConversationObject;
 type MessageObject = types.MessageObject;
-type TopicResponse =
-  operations["getTopic"]["responses"][200]["content"]["application/json"];
-type TopicPost = Pick<
-  TopicResponse["post_stream"]["posts"][number],
-  | "id"
-  | "post_number"
-  | "username"
-  | "cooked"
-  | "created_at"
-  | "updated_at"
-  | "version"
-  | "hidden"
-  | "reply_to_post_number"
->;
-
-export type Topic = Omit<
-  Pick<
-    TopicResponse,
-    "id" | "title" | "slug" | "created_at" | "last_posted_at" | "closed"
-  >,
-  "last_posted_at"
-> & {
-  // The HTTP adapter replaces a missing last-post timestamp with created_at.
-  last_posted_at: string;
-  posts: TopicPost[];
-};
 
 const everyone = {
   accessControls: [{ principals: [{ type: "EVERYONE" as const }] }],

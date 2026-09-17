@@ -20,11 +20,12 @@ import {
 } from "./discourse";
 import {
   advance,
+  type CrawlState,
   crawlStateKey,
   pageToCrawl,
-  type CrawlState,
 } from "./discourse/crawl-state";
-import { syncTopics, type SyncProgress } from "./discourse/sync";
+import { summarizeRejection } from "./discourse/ingestion-rejection";
+import { type SyncProgress, syncTopics } from "./discourse/sync";
 
 type ConnectionChange = { action: string; connectionId: string };
 type ConnectionChangeResponse =
@@ -44,46 +45,6 @@ const connectionTaskKey = (connectionId: string) =>
 const taskInfoKey = (taskId: string) => `taskInfo:${taskId}`;
 const unavailable = (detail: string) =>
   StandardError.getOrDefault(502).error(detail);
-
-type IngestionRejection = {
-  errors: Array<{ key: string }>;
-};
-
-function summarizeIngestionFailure(error: string): string {
-  const start = error.indexOf('{"accepted"');
-  const end = error.lastIndexOf("} (Trace ID:");
-  const traceId = error.match(/\(Trace ID: ([^)]+)\)/)?.[1];
-  if (start === -1 || end === -1) {
-    return traceId
-      ? `Could not publish Discourse topics (Trace ID: ${traceId})`
-      : "Could not publish Discourse topics";
-  }
-
-  try {
-    const { rejected } = JSON.parse(error.slice(start, end + 1)) as {
-      rejected?: IngestionRejection[];
-    };
-    if (!rejected) throw new Error("Missing rejected objects");
-    const counts = new Map<string, number>();
-    for (const { errors } of rejected) {
-      for (const { key } of errors) {
-        counts.set(key, (counts.get(key) ?? 0) + 1);
-      }
-    }
-    const entries = [...counts];
-    const errorCounts = entries
-      .slice(0, 5)
-      .map(([key, count]) => `${key} × ${count}`)
-      .join(", ");
-    const omittedErrorCounts =
-      entries.length > 5 ? `, +${entries.length - 5} more` : "";
-    return `Could not publish ${rejected.length} Discourse objects (${errorCounts}${omittedErrorCounts})${traceId ? ` (Trace ID: ${traceId})` : ""}`;
-  } catch {
-    return traceId
-      ? `Could not publish Discourse topics (Trace ID: ${traceId})`
-      : "Could not publish Discourse topics";
-  }
-}
 
 function validateConnectionChange(
   event: unknown,
@@ -257,8 +218,6 @@ export async function taskRunner(
           if (published.isErr()) return err(published.error);
           if (published.value.success) return ok(undefined);
 
-          const error =
-            published.value.error ?? "Could not publish Discourse topics";
           log.debug?.(
             () => ({
               connectionId,
@@ -267,7 +226,7 @@ export async function taskRunner(
             }),
             "Discourse topic ingestion failed",
           );
-          return unavailable(summarizeIngestionFailure(error));
+          return unavailable(summarizeRejection(published.value));
         },
         connectionId: request.connectionId,
         baseUrl: baseUrl.value,

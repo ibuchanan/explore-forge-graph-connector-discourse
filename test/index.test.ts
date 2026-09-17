@@ -132,8 +132,15 @@ describe("taskRunner", () => {
   it("summarizes rejected ingestion and reserves the full response for debug logs", async () => {
     const response = {
       success: false,
-      error:
-        'Failed to set objects: Bad Request - {"accepted":[],"rejected":[{"errors":[{"key":"conversationData.schemaVersion.invalid"}]}]} (Trace ID: trace-123)',
+      error: "Failed to set objects (Trace ID: trace-123)",
+      results: {
+        rejected: [
+          {
+            key: "topic-123",
+            errors: [{ key: "conversationData.schemaVersion.invalid" }],
+          },
+        ],
+      },
       originalError: { details: "full upstream response" },
     };
     const source = {

@@ -57,3 +57,16 @@
   logged.
 - **Paired Epic**: the supplier-owned existing Epic that represents supplier
   delivery work.
+- **Ingestion rejection**: the Teamwork Graph's refusal of some or all objects
+  in one `setObjects` call, together with the per-object error keys explaining
+  why. A partial rejection still leaves accepted objects published.
+- **Topic**: one Discourse topic and its posts, as a Topic source yields it.
+  Always carries a last-posted timestamp; adapters substitute the creation
+  timestamp when Discourse omits one.
+- **Post**: one message within a Topic, identified by its post number within
+  that Topic.
+- **Topic page**: one page of Topic IDs from the forum's latest-topics listing,
+  plus whether further pages follow.
+- **Topic source**: the seam through which the connector reads Topics. Two
+  adapters satisfy it: the Discourse HTTP client and the literals the sync tests
+  build.

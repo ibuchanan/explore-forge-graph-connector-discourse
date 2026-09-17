@@ -15,8 +15,7 @@ import type { operations, paths } from "./api/types";
 import { log } from "@forge-ahead/logging";
 
 import { forgeFetch } from "./forge-fetch";
-import type { Topic } from "./map-topic";
-import type { TopicPage } from "./sync";
+import type { Topic, TopicPage } from "./topic-source";
 
 type LatestTopicsResponse =
   operations["listLatestTopics"]["responses"][200]["content"]["application/json"];

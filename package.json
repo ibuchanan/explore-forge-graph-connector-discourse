@@ -39,6 +39,7 @@
     "@forge-ahead/errors": "github:ibuchanan/forge-ahead-errors",
     "@forge-ahead/logging": "github:ibuchanan/forge-ahead-logging",
     "@forge/api": "^8.1",
+    "@forge/kvs": "^2.0.6",
     "@forge/teamwork-graph": "^5.2",
     "openapi-fetch": "^0.17"
   },

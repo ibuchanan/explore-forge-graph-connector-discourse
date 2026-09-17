@@ -11,7 +11,7 @@ modules:
       capabilities:
         replicatesPermissions: false
         supportsIncrementalSync: false
-        syncFidelity: mirror
+        syncFidelity: upsert
       datasource:
         onConnectionChange:
           function: onConnectionChange
@@ -21,9 +21,15 @@ modules:
       objectTypes:
         - atlassian:conversation
         - atlassian:message
+      orchestration:
+        taskRunner:
+          function: taskRunner
   function:
     - key: onConnectionChange
       handler: index.onConnectionChange
+    - key: taskRunner
+      handler: index.taskRunner
+      timeoutSeconds: 900
 permissions:
   external:
     fetch:
@@ -35,3 +41,4 @@ permissions:
     - delete:object:jira
     - read:object:jira
     - write:object:jira
+    - storage:app

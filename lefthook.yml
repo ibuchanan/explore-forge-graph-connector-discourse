@@ -4,6 +4,14 @@ output:
   - summary
   - failure
 
+format:
+  parallel: true
+  commands:
+    biome:
+      run: npm run format:biome
+    scripts:
+      run: npm run format:scripts
+
 lint:
   parallel: true
   commands:
@@ -13,6 +21,8 @@ lint:
       run: npm run lint:check
     forge:
       run: npm run lint:forge
+    scripts:
+      run: npm run lint:scripts
     typecheck:
       run: npm run typecheck
 

@@ -1,3 +1,7 @@
+environment:
+  variables:
+    - DISCOURSE_BASE_URL
+
 app:
   runtime:
     name: nodejs24.x
@@ -34,9 +38,7 @@ permissions:
   external:
     fetch:
       backend:
-        # Forge cannot express admin configuration for backend addresses.
-        # If you have forked this app, you can narrow the address to your Discourse site.
-        - address: "*"
+        - address: "${DISCOURSE_BASE_URL}"
   scopes:
     - delete:object:jira
     - read:object:jira

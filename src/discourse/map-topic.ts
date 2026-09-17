@@ -71,7 +71,7 @@ export function mapTopic(
   topic: Topic,
   baseUrl: string,
 ): Result<Array<ConversationObject | MessageObject>, ProblemDetails> {
-  const firstPost = topic.posts[0];
+  const firstPost = topic.posts.find(({ post_number }) => post_number === 1);
   if (!firstPost) {
     return StandardError.getOrDefault(400).error(
       `Discourse topic ${topic.id} has no posts`,

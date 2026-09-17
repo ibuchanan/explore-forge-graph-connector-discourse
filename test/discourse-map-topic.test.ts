@@ -110,6 +110,46 @@ describe("mapTopic", () => {
     ]);
   });
 
+  it("uses the post numbered one as the original post when posts are unordered", () => {
+    const objects = expectOk(
+      mapTopic(
+        {
+          id: 123,
+          title: "Topic title",
+          slug: "topic-title",
+          created_at: "2026-09-16T10:00:00.000Z",
+          last_posted_at: "2026-09-16T11:00:00.000Z",
+          closed: false,
+          posts: [
+            {
+              id: 457,
+              post_number: 2,
+              username: "grace",
+              cooked: "<p>A reply.</p>",
+              created_at: "2026-09-16T11:00:00.000Z",
+              updated_at: "2026-09-16T11:00:00.000Z",
+              version: 2,
+            },
+            {
+              id: 456,
+              post_number: 1,
+              username: "ada",
+              cooked: "<p>The original post.</p>",
+              created_at: "2026-09-16T10:00:00.000Z",
+              updated_at: "2026-09-16T10:00:00.000Z",
+              version: 1,
+            },
+          ],
+        },
+        "https://community.example.com/",
+      ),
+    );
+
+    expect(objects[0]).toMatchObject({
+      description: "The original post.",
+    });
+  });
+
   it("removes leading Markdown heading markers from conversation titles", () => {
     const objects = expectOk(
       mapTopic(

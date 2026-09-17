@@ -2,6 +2,7 @@ import {
   err,
   fromPromise,
   fromThrowable,
+  problemDetails,
   ok,
   type ProblemDetails,
   type Result,
@@ -11,8 +12,11 @@ import {
 import createClient from "openapi-fetch";
 
 import type { operations, paths } from "./api/types";
+import { log } from "@forge-ahead/logging";
+
 import { forgeFetch } from "./forge-fetch";
 import type { Topic } from "./map-topic";
+import type { TopicPage } from "./sync";
 
 type LatestTopicsResponse =
   operations["listLatestTopics"]["responses"][200]["content"]["application/json"];
@@ -55,10 +59,12 @@ export function createDiscourseClient(baseUrl: string) {
 
 export function createDiscourseTopicSource(client: DiscourseClient) {
   return {
-    async listLatestTopics(): Promise<Result<number[], ProblemDetails>> {
+    async listLatestTopics(
+      page: number,
+    ): Promise<Result<TopicPage, ProblemDetails>> {
       const result = await fromPromise(
         client.GET("/latest.json", {
-          params: { query: { per_page: 100 } },
+          params: { query: { page, per_page: 100 } },
         } as never),
         (error) =>
           toProblemDetails(
@@ -67,20 +73,42 @@ export function createDiscourseTopicSource(client: DiscourseClient) {
             "Could not list latest Discourse topics",
           ),
       );
-      if (result.isErr()) {
-        return err(result.error);
+      if (result.isErr()) return err(result.error);
+
+      const { data, error, response } = result.value as {
+        data?: LatestTopicsResponse;
+        error?: unknown;
+        response?: Response;
+      };
+      if (response?.status === 429) {
+        log.warn(
+          {
+            endpoint: "/latest.json",
+            page,
+            retryAfter: response.headers.get("retry-after"),
+            rateLimitRemaining: response.headers.get("x-ratelimit-remaining"),
+          },
+          "Discourse rate limit reached",
+        );
+        return err(problemDetails(429, "Discourse rate limit reached"));
+      }
+      if (error || !data?.topic_list?.topics) {
+        log.warn(
+          { endpoint: "/latest.json", page, status: response?.status },
+          "Discourse topic listing failed",
+        );
+        return unavailable("Could not list latest Discourse topics");
       }
 
-      const response = result.value.data as unknown as
-        | LatestTopicsResponse
-        | undefined;
-      return result.value.error || !response?.topic_list?.topics
-        ? unavailable("Could not list latest Discourse topics")
-        : ok(
-            response.topic_list.topics.flatMap(({ id }) =>
-              typeof id === "number" ? [id] : [],
-            ),
-          );
+      const ids = data.topic_list.topics.flatMap(({ id }) =>
+        typeof id === "number" ? [id] : [],
+      );
+      return ok({
+        ids,
+        hasMore: Boolean(
+          (data.topic_list as { more_topics_url?: string }).more_topics_url,
+        ),
+      });
     },
 
     async getTopic(id: number): Promise<Result<Topic, ProblemDetails>> {
@@ -91,24 +119,41 @@ export function createDiscourseTopicSource(client: DiscourseClient) {
         (error) =>
           toProblemDetails(error, 502, `Could not get Discourse topic ${id}`),
       );
-      if (result.isErr()) {
-        return err(result.error);
-      }
+      if (result.isErr()) return err(result.error);
 
-      const response = result.value.data as unknown as
-        | TopicResponse
-        | undefined;
-      return result.value.error || !response
-        ? unavailable(`Could not get Discourse topic ${id}`)
-        : ok({
-            id: response.id,
-            title: response.title,
-            slug: response.slug,
-            created_at: response.created_at,
-            last_posted_at: response.last_posted_at ?? response.created_at,
-            closed: response.closed,
-            posts: response.post_stream.posts,
-          });
+      const { data, error, response } = result.value as {
+        data?: TopicResponse;
+        error?: unknown;
+        response?: Response;
+      };
+      if (response?.status === 429) {
+        log.warn(
+          {
+            endpoint: "/t/{id}.json",
+            topicId: id,
+            retryAfter: response.headers.get("retry-after"),
+            rateLimitRemaining: response.headers.get("x-ratelimit-remaining"),
+          },
+          "Discourse rate limit reached",
+        );
+        return err(problemDetails(429, "Discourse rate limit reached"));
+      }
+      if (error || !data) {
+        log.warn(
+          { endpoint: "/t/{id}.json", topicId: id, status: response?.status },
+          "Discourse topic request failed",
+        );
+        return unavailable(`Could not get Discourse topic ${id}`);
+      }
+      return ok({
+        id: data.id,
+        title: data.title,
+        slug: data.slug,
+        created_at: data.created_at,
+        last_posted_at: data.last_posted_at ?? data.created_at,
+        closed: data.closed,
+        posts: data.post_stream.posts,
+      });
     },
   };
 }

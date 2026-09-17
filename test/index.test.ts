@@ -90,7 +90,7 @@ describe("onConnectionChange", () => {
 describe("taskRunner", () => {
   it("publishes a scheduled connection crawl and reports success", async () => {
     const source = {
-      listLatestTopics: vi.fn(async () => ok([])),
+      listLatestTopics: vi.fn(async () => ok({ ids: [], hasMore: true })),
       getTopic: vi.fn(),
     };
     createDiscourseTopicSource.mockReturnValue(source);
@@ -110,6 +110,11 @@ describe("taskRunner", () => {
     ).resolves.toEqual({ success: true });
 
     expect(createDiscourseTopicSource).toHaveBeenCalledOnce();
+    expect(kvs.get).toHaveBeenCalledWith("crawlState:connection-123");
+    expect(kvs.set).toHaveBeenCalledWith(
+      "crawlState:connection-123",
+      expect.objectContaining({ nextPage: 1, discoveredTopics: 0 }),
+    );
     expect(graph.updateTaskStatus).toHaveBeenCalledWith({
       connectionId: "connection-123",
       scanId: "scan-123",

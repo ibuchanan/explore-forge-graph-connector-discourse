@@ -18,7 +18,7 @@ import {
   createDiscourseTopicSource,
   discourseBaseUrl,
 } from "./discourse";
-import { syncTopics } from "./discourse/sync";
+import { syncTopics, type SyncProgress } from "./discourse/sync";
 
 type ConnectionChange = { action: string; connectionId: string };
 type ConnectionChangeResponse =
@@ -32,9 +32,19 @@ type TaskRunnerPayload = {
 };
 type TaskRunnerResult = { success: boolean; message?: string };
 type TaskInfo = { connectionId: string; taskType: types.ForgeTaskType };
+type CrawlState = {
+  nextPage: number;
+  discoveredTopics?: number;
+  publishedTopics?: number;
+  publishedObjects?: number;
+  skippedTopics?: number;
+  oldestPostAt?: string;
+  newestPostAt?: string;
+};
 
 const connectionTaskKey = (connectionId: string) =>
   `connectionTask:${connectionId}`;
+const crawlStateKey = (connectionId: string) => `crawlState:${connectionId}`;
 const taskInfoKey = (taskId: string) => `taskInfo:${taskId}`;
 const unavailable = (detail: string) =>
   StandardError.getOrDefault(502).error(detail);
@@ -176,9 +186,20 @@ export async function taskRunner(
     };
   }
 
+  const crawlState = await fromPromise(
+    kvs.get<CrawlState>(crawlStateKey(request.connectionId)),
+    (error) =>
+      toProblemDetails(error, 502, "Could not read Discourse crawl state"),
+  );
+  if (crawlState.isErr()) {
+    await updateTaskStatus(request, "failure", "RETRYABLE_ERROR");
+    return { success: false, message: toErrorMessage(crawlState.error) };
+  }
+
+  const page = crawlState.value?.nextPage ?? 0;
   const baseUrl = discourseBaseUrl();
-  const synced = baseUrl.isErr()
-    ? baseUrl
+  const synced: Result<SyncProgress, ProblemDetails> = baseUrl.isErr()
+    ? err(baseUrl.error)
     : await syncTopics({
         source: createDiscourseTopicSource(
           createDiscourseClient(baseUrl.value),
@@ -203,21 +224,83 @@ export async function taskRunner(
         },
         connectionId: request.connectionId,
         baseUrl: baseUrl.value,
+        page,
       });
-  const status = synced.isOk() ? "success" : "failure";
+  logResult(log, synced, {
+    successMessage: "Discourse crawl task page succeeded",
+    errorMessage: "Discourse crawl task page failed",
+    summarizeOk: (progress) => ({
+      connectionId: request.connectionId,
+      page,
+      ...progress,
+    }),
+    summarizeErr: (error) => ({
+      connectionId: request.connectionId,
+      page,
+      status: error.status,
+      detail: error.detail,
+    }),
+  });
+  let advanced: Result<void, ProblemDetails>;
+  if (synced.isErr()) {
+    advanced = err(synced.error);
+  } else {
+    const timestamps = [
+      crawlState.value?.oldestPostAt,
+      crawlState.value?.newestPostAt,
+      synced.value.oldestPostAt,
+      synced.value.newestPostAt,
+    ]
+      .filter((value): value is string => typeof value === "string")
+      .sort();
+    const cumulativeProgress = {
+      discoveredTopics:
+        (crawlState.value?.discoveredTopics ?? 0) +
+        synced.value.discoveredTopics,
+      publishedTopics:
+        (crawlState.value?.publishedTopics ?? 0) + synced.value.publishedTopics,
+      publishedObjects:
+        (crawlState.value?.publishedObjects ?? 0) +
+        synced.value.publishedObjects,
+      skippedTopics:
+        (crawlState.value?.skippedTopics ?? 0) + synced.value.skippedTopics,
+      ...(timestamps.length > 0
+        ? { oldestPostAt: timestamps[0], newestPostAt: timestamps.at(-1) }
+        : {}),
+    };
+    const completed = !synced.value.hasMore;
+    log.info(
+      {
+        connectionId: request.connectionId,
+        page,
+        completed,
+        ...cumulativeProgress,
+      },
+      completed ? "Discourse crawl completed" : "Discourse crawl progress",
+    );
+    advanced = await fromPromise(
+      kvs.set(
+        crawlStateKey(request.connectionId),
+        completed
+          ? { nextPage: 0 }
+          : { nextPage: page + 1, ...cumulativeProgress },
+      ),
+      (error) =>
+        toProblemDetails(error, 502, "Could not save Discourse crawl state"),
+    );
+  }
+  const status = advanced.isOk() ? "success" : "failure";
   const reported = await updateTaskStatus(
     request,
     status,
     status === "failure" ? "RETRYABLE_ERROR" : undefined,
   );
-  if (synced.isOk() && reported.isOk()) {
-    return { success: true };
-  }
+  if (advanced.isOk() && reported.isOk()) return { success: true };
   return {
     success: false,
     message: toErrorMessage(
-      synced.isErr()
-        ? synced.error
+      advanced.isErr()
+        ? advanced.error
         : reported.isErr()
           ? reported.error
           : problemDetails(500, "Could not update Discourse task status"),

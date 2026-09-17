@@ -8,6 +8,8 @@ const {
   get,
   graph,
   kvs,
+  log,
+  logResult,
 } = vi.hoisted(() => {
   const get = vi.fn();
 
@@ -22,6 +24,8 @@ const {
       updateTaskStatus: vi.fn(),
     },
     kvs: { get: vi.fn(), set: vi.fn() },
+    log: { debug: vi.fn(), error: vi.fn(), info: vi.fn(), warn: vi.fn() },
+    logResult: vi.fn(),
   };
 });
 
@@ -37,6 +41,7 @@ vi.mock("@forge/teamwork-graph", () => ({
   },
 }));
 vi.mock("@forge/kvs", () => ({ kvs }));
+vi.mock("@forge-ahead/logging", () => ({ log, logResult }));
 
 import { onConnectionChange, taskRunner } from "../src/index";
 
@@ -121,6 +126,74 @@ describe("taskRunner", () => {
       taskExecutionId: "execution-123",
       status: "success",
       task: { taskId: "task-123" },
+    });
+  });
+
+  it("summarizes rejected ingestion and reserves the full response for debug logs", async () => {
+    const response = {
+      success: false,
+      error:
+        'Failed to set objects: Bad Request - {"accepted":[],"rejected":[{"errors":[{"key":"conversationData.schemaVersion.invalid"}]}]} (Trace ID: trace-123)',
+      originalError: { details: "full upstream response" },
+    };
+    const source = {
+      listLatestTopics: vi.fn(async () => ok({ ids: [123], hasMore: false })),
+      getTopic: vi.fn(async () =>
+        ok({
+          id: 123,
+          title: "Topic title",
+          slug: "topic-title",
+          created_at: "2026-09-16T10:00:00.000Z",
+          last_posted_at: "2026-09-16T10:00:00.000Z",
+          closed: false,
+          posts: [
+            {
+              id: 456,
+              post_number: 1,
+              username: "ada",
+              cooked: "<p>Hello.</p>",
+              created_at: "2026-09-16T10:00:00.000Z",
+              updated_at: "2026-09-16T10:00:00.000Z",
+              version: 1,
+            },
+          ],
+        }),
+      ),
+    };
+    const debug = log.debug;
+    createDiscourseTopicSource.mockReturnValue(source);
+    kvs.get
+      .mockResolvedValueOnce({
+        connectionId: "connection-123",
+        taskType: "entity_ingestion_full",
+      })
+      .mockResolvedValueOnce({ nextPage: 0 });
+    graph.setObjects.mockResolvedValue(response);
+    graph.updateTaskStatus.mockResolvedValue({ status: "ACCEPTED" });
+
+    await expect(
+      taskRunner({
+        connectionId: "connection-123",
+        scanId: "scan-123",
+        taskExecutionId: "execution-123",
+        taskId: "task-123",
+      }),
+    ).resolves.toEqual({
+      success: false,
+      message:
+        "Could not publish 1 Discourse objects (conversationData.schemaVersion.invalid × 1) (Trace ID: trace-123)",
+    });
+
+    expect(debug).toHaveBeenCalledWith(
+      expect.any(Function),
+      "Discourse topic ingestion failed",
+    );
+    const payload = debug.mock.calls[0]?.[0];
+    expect(payload).toEqual(expect.any(Function));
+    expect((payload as () => unknown)()).toMatchObject({
+      connectionId: "connection-123",
+      objectCount: 2,
+      response,
     });
   });
 });

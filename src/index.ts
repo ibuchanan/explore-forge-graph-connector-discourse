@@ -18,6 +18,12 @@ import {
   createDiscourseTopicSource,
   discourseBaseUrl,
 } from "./discourse";
+import {
+  advance,
+  crawlStateKey,
+  pageToCrawl,
+  type CrawlState,
+} from "./discourse/crawl-state";
 import { syncTopics, type SyncProgress } from "./discourse/sync";
 
 type ConnectionChange = { action: string; connectionId: string };
@@ -32,19 +38,9 @@ type TaskRunnerPayload = {
 };
 type TaskRunnerResult = { success: boolean; message?: string };
 type TaskInfo = { connectionId: string; taskType: types.ForgeTaskType };
-type CrawlState = {
-  nextPage: number;
-  discoveredTopics?: number;
-  publishedTopics?: number;
-  publishedObjects?: number;
-  skippedTopics?: number;
-  oldestPostAt?: string;
-  newestPostAt?: string;
-};
 
 const connectionTaskKey = (connectionId: string) =>
   `connectionTask:${connectionId}`;
-const crawlStateKey = (connectionId: string) => `crawlState:${connectionId}`;
 const taskInfoKey = (taskId: string) => `taskInfo:${taskId}`;
 const unavailable = (detail: string) =>
   StandardError.getOrDefault(502).error(detail);
@@ -240,7 +236,7 @@ export async function taskRunner(
     return { success: false, message: toErrorMessage(crawlState.error) };
   }
 
-  const page = crawlState.value?.nextPage ?? 0;
+  const page = pageToCrawl(crawlState.value);
   const baseUrl = discourseBaseUrl();
   const synced: Result<SyncProgress, ProblemDetails> = baseUrl.isErr()
     ? err(baseUrl.error)
@@ -296,48 +292,16 @@ export async function taskRunner(
   if (synced.isErr()) {
     advanced = err(synced.error);
   } else {
-    const timestamps = [
-      crawlState.value?.oldestPostAt,
-      crawlState.value?.newestPostAt,
-      synced.value.oldestPostAt,
-      synced.value.newestPostAt,
-    ]
-      .filter((value): value is string => typeof value === "string")
-      .sort();
-    const cumulativeProgress = {
-      discoveredTopics:
-        (crawlState.value?.discoveredTopics ?? 0) +
-        synced.value.discoveredTopics,
-      publishedTopics:
-        (crawlState.value?.publishedTopics ?? 0) + synced.value.publishedTopics,
-      publishedObjects:
-        (crawlState.value?.publishedObjects ?? 0) +
-        synced.value.publishedObjects,
-      skippedTopics:
-        (crawlState.value?.skippedTopics ?? 0) + synced.value.skippedTopics,
-      ...(timestamps.length > 0
-        ? { oldestPostAt: timestamps[0], newestPostAt: timestamps.at(-1) }
-        : {}),
-    };
-    const completed = !synced.value.hasMore;
+    const nextState = advance(crawlState.value, synced.value);
+    const completed = nextState.nextPage === 0;
     log.info(
-      {
-        connectionId: request.connectionId,
-        page,
-        completed,
-        ...cumulativeProgress,
-      },
+      { connectionId: request.connectionId, page, completed, ...nextState },
       completed
         ? "Discourse topic crawl completed"
         : "Discourse topic crawl progress",
     );
     advanced = await fromPromise(
-      kvs.set(
-        crawlStateKey(request.connectionId),
-        completed
-          ? { nextPage: 0 }
-          : { nextPage: page + 1, ...cumulativeProgress },
-      ),
+      kvs.set(crawlStateKey(request.connectionId), nextState),
       (error) =>
         toProblemDetails(error, 502, "Could not save Discourse crawl state"),
     );

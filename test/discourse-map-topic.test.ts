@@ -1,3 +1,4 @@
+import { expectOk } from "@forge-ahead/errors/testing";
 import { describe, expect, it } from "vitest";
 
 import { mapTopic } from "../src/discourse/map-topic";
@@ -5,37 +6,39 @@ import { mapTopic } from "../src/discourse/map-topic";
 describe("mapTopic", () => {
   it("projects a topic and its posts as a conversation with contained messages", () => {
     expect(
-      mapTopic(
-        {
-          id: 123,
-          title: "How do I connect Discourse?",
-          slug: "how-do-i-connect-discourse",
-          created_at: "2026-09-16T10:00:00.000Z",
-          last_posted_at: "2026-09-16T11:00:00.000Z",
-          closed: false,
-          posts: [
-            {
-              id: 456,
-              post_number: 1,
-              username: "ada",
-              cooked: "<p>Start with a connector.</p>",
-              created_at: "2026-09-16T10:00:00.000Z",
-              updated_at: "2026-09-16T10:00:00.000Z",
-              version: 1,
-            },
-            {
-              id: 457,
-              post_number: 2,
-              username: "grace",
-              cooked: "<p>Then publish the messages.</p>",
-              created_at: "2026-09-16T11:00:00.000Z",
-              updated_at: "2026-09-16T11:00:00.000Z",
-              version: 2,
-              reply_to_post_number: 1,
-            },
-          ],
-        },
-        "https://community.example.com/",
+      expectOk(
+        mapTopic(
+          {
+            id: 123,
+            title: "How do I connect Discourse?",
+            slug: "how-do-i-connect-discourse",
+            created_at: "2026-09-16T10:00:00.000Z",
+            last_posted_at: "2026-09-16T11:00:00.000Z",
+            closed: false,
+            posts: [
+              {
+                id: 456,
+                post_number: 1,
+                username: "ada",
+                cooked: "<p>Start with a connector.</p>",
+                created_at: "2026-09-16T10:00:00.000Z",
+                updated_at: "2026-09-16T10:00:00.000Z",
+                version: 1,
+              },
+              {
+                id: 457,
+                post_number: 2,
+                username: "grace",
+                cooked: "<p>Then publish the messages.</p>",
+                created_at: "2026-09-16T11:00:00.000Z",
+                updated_at: "2026-09-16T11:00:00.000Z",
+                version: 2,
+                reply_to_post_number: 1,
+              },
+            ],
+          },
+          "https://community.example.com/",
+        ),
       ),
     ).toEqual([
       {

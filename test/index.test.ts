@@ -1,3 +1,4 @@
+import { ok } from "@forge-ahead/errors";
 import { describe, expect, it, vi } from "vitest";
 
 const {
@@ -13,7 +14,7 @@ const {
   return {
     createDiscourseClient: vi.fn(() => ({ GET: get })),
     createDiscourseTopicSource: vi.fn(),
-    discourseBaseUrl: vi.fn(() => "https://community.example.com/"),
+    discourseBaseUrl: vi.fn(() => ok("https://community.example.com/")),
     get,
     graph: {
       scheduleOrUpdateTask: vi.fn(),
@@ -52,6 +53,7 @@ describe("onConnectionChange", () => {
   it("probes Discourse and schedules a full entity crawl when a connection is created", async () => {
     get.mockResolvedValue({ data: { site: {} } });
     kvs.get.mockResolvedValue(undefined);
+    kvs.set.mockResolvedValue(undefined);
     graph.scheduleOrUpdateTask.mockResolvedValue({ status: "ACCEPTED" });
 
     await expect(
@@ -88,7 +90,7 @@ describe("onConnectionChange", () => {
 describe("taskRunner", () => {
   it("publishes a scheduled connection crawl and reports success", async () => {
     const source = {
-      listLatestTopics: vi.fn(async () => []),
+      listLatestTopics: vi.fn(async () => ok([])),
       getTopic: vi.fn(),
     };
     createDiscourseTopicSource.mockReturnValue(source);

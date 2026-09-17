@@ -1,3 +1,5 @@
+import { ok } from "@forge-ahead/errors";
+import { expectOk } from "@forge-ahead/errors/testing";
 import { describe, expect, it, vi } from "vitest";
 
 import type { Topic } from "../src/discourse/map-topic";
@@ -26,17 +28,19 @@ const topic: Topic = {
 describe("syncTopics", () => {
   it("fetches each discovered topic and publishes its conversation and messages as one batch", async () => {
     const source = {
-      listLatestTopics: vi.fn(async () => [123]),
-      getTopic: vi.fn(async () => topic),
+      listLatestTopics: vi.fn(async () => ok([123])),
+      getTopic: vi.fn(async () => ok(topic)),
     };
-    const publish = vi.fn(async () => undefined);
+    const publish = vi.fn(async () => ok(undefined));
 
-    await syncTopics({
-      source,
-      publish,
-      connectionId: "connection-123",
-      baseUrl: "https://community.example.com/",
-    });
+    expectOk(
+      await syncTopics({
+        source,
+        publish,
+        connectionId: "connection-123",
+        baseUrl: "https://community.example.com/",
+      }),
+    );
 
     expect(source.getTopic).toHaveBeenCalledWith(123);
     expect(publish).toHaveBeenCalledWith("connection-123", [

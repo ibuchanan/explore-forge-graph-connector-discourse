@@ -4,6 +4,5 @@ export default defineConfig({
   test: {
     globals: true,
     include: ["test/**/*.test.ts", "test/**/*.test.tsx"],
-    setupFiles: ["test/setup-forge-host.ts"],
   },
 });

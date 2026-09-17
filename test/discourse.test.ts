@@ -1,3 +1,4 @@
+import { expectErr, expectOk } from "@forge-ahead/errors/testing";
 import { afterEach, describe, expect, it, vi } from "vitest";
 
 const { fetch } = vi.hoisted(() => ({
@@ -22,30 +23,35 @@ describe("discourseBaseUrl", () => {
   it("reads and normalizes the configured base URL", () => {
     process.env.DISCOURSE_BASE_URL = "https://community.example.com/";
 
-    expect(discourseBaseUrl()).toBe("https://community.example.com/");
+    expect(expectOk(discourseBaseUrl())).toBe("https://community.example.com/");
   });
 
   it("rejects a missing base URL", () => {
     delete process.env.DISCOURSE_BASE_URL;
 
-    expect(() => discourseBaseUrl()).toThrow("DISCOURSE_BASE_URL must be set");
+    expect(expectErr(discourseBaseUrl())).toMatchObject({
+      status: 400,
+      detail: "DISCOURSE_BASE_URL must be set",
+    });
   });
 
   it("rejects a non-HTTPS base URL", () => {
     process.env.DISCOURSE_BASE_URL = "http://community.example.com";
 
-    expect(() => discourseBaseUrl()).toThrow(
-      "DISCOURSE_BASE_URL must use HTTPS",
-    );
+    expect(expectErr(discourseBaseUrl())).toMatchObject({
+      status: 400,
+      detail: "DISCOURSE_BASE_URL must use HTTPS",
+    });
   });
 
   it("rejects a base URL with embedded credentials", () => {
     process.env.DISCOURSE_BASE_URL =
       "https://user:password@community.example.com";
 
-    expect(() => discourseBaseUrl()).toThrow(
-      "DISCOURSE_BASE_URL must not contain credentials",
-    );
+    expect(expectErr(discourseBaseUrl())).toMatchObject({
+      status: 400,
+      detail: "DISCOURSE_BASE_URL must not contain credentials",
+    });
   });
 });
 

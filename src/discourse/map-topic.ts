@@ -45,6 +45,10 @@ function textFromHtml(html: string): string {
   return html.replace(/<[^>]*>/g, "").trim();
 }
 
+function conversationDescription(html: string): string {
+  return textFromHtml(html).slice(0, 1024);
+}
+
 function topicUrl(baseUrl: string, topic: Topic, postNumber?: number): string {
   const path = `/t/${encodeURIComponent(topic.slug)}/${topic.id}`;
   return new URL(postNumber ? `${path}/${postNumber}` : path, baseUrl).href;
@@ -77,7 +81,7 @@ export function mapTopic(
       );
 
       return {
-        schemaVersion: "1.0",
+        schemaVersion: "2.0",
         id: `post:${post.id}`,
         updateSequenceNumber: post.version,
         description: textFromHtml(post.cooked),
@@ -106,17 +110,17 @@ export function mapTopic(
 
     return [
       {
-        schemaVersion: "1.0",
+        schemaVersion: "2.0",
         id: `topic:${topic.id}`,
         updateSequenceNumber,
         displayName: topic.title,
-        description: textFromHtml(firstPost.cooked),
+        description: conversationDescription(firstPost.cooked),
         url: topicUrl(baseUrl, topic),
         createdAt: topic.created_at,
         lastUpdatedAt: topic.last_posted_at,
         permissions: everyone,
         "atlassian:conversation": {
-          type: "forum-topic",
+          type: "channel",
           membershipType: "public",
           workspace: "Discourse",
           members: [

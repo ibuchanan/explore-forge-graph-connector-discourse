@@ -42,7 +42,7 @@ describe("mapTopic", () => {
       ),
     ).toEqual([
       {
-        schemaVersion: "1.0",
+        schemaVersion: "2.0",
         id: "topic:123",
         updateSequenceNumber: 1_789_556_400_000,
         displayName: "How do I connect Discourse?",
@@ -54,7 +54,7 @@ describe("mapTopic", () => {
           accessControls: [{ principals: [{ type: "EVERYONE" }] }],
         },
         "atlassian:conversation": {
-          type: "forum-topic",
+          type: "channel",
           membershipType: "public",
           workspace: "Discourse",
           isArchived: false,
@@ -64,7 +64,7 @@ describe("mapTopic", () => {
         },
       },
       {
-        schemaVersion: "1.0",
+        schemaVersion: "2.0",
         id: "post:456",
         updateSequenceNumber: 1,
         description: "Start with a connector.",
@@ -84,7 +84,7 @@ describe("mapTopic", () => {
         },
       },
       {
-        schemaVersion: "1.0",
+        schemaVersion: "2.0",
         id: "post:457",
         updateSequenceNumber: 2,
         description: "Then publish the messages.",
@@ -108,5 +108,39 @@ describe("mapTopic", () => {
         },
       },
     ]);
+  });
+
+  it("uses the supported schema and bounds conversation descriptions", () => {
+    const objects = expectOk(
+      mapTopic(
+        {
+          id: 123,
+          title: "Long opening post",
+          slug: "long-opening-post",
+          created_at: "2026-09-16T10:00:00.000Z",
+          last_posted_at: "2026-09-16T10:00:00.000Z",
+          closed: false,
+          posts: [
+            {
+              id: 456,
+              post_number: 1,
+              username: "ada",
+              cooked: `<p>${"x".repeat(1025)}</p>`,
+              created_at: "2026-09-16T10:00:00.000Z",
+              updated_at: "2026-09-16T10:00:00.000Z",
+              version: 1,
+            },
+          ],
+        },
+        "https://community.example.com/",
+      ),
+    );
+
+    expect(objects[0]).toMatchObject({
+      schemaVersion: "2.0",
+      description: "x".repeat(1024),
+      "atlassian:conversation": { type: "channel" },
+    });
+    expect(objects[1]).toMatchObject({ schemaVersion: "2.0" });
   });
 });

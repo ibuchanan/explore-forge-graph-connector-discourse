@@ -49,6 +49,10 @@ function conversationDescription(html: string): string {
   return textFromHtml(html).slice(0, 1024);
 }
 
+function conversationDisplayName(title: string): string {
+  return title.replace(/^#+\s*/, "").trim();
+}
+
 function topicUrl(baseUrl: string, topic: Topic, postNumber?: number): string {
   const path = `/t/${encodeURIComponent(topic.slug)}/${topic.id}`;
   return new URL(postNumber ? `${path}/${postNumber}` : path, baseUrl).href;
@@ -113,7 +117,7 @@ export function mapTopic(
         schemaVersion: "2.0",
         id: `topic:${topic.id}`,
         updateSequenceNumber,
-        displayName: topic.title,
+        displayName: conversationDisplayName(topic.title),
         description: conversationDescription(firstPost.cooked),
         url: topicUrl(baseUrl, topic),
         createdAt: topic.created_at,

@@ -110,6 +110,37 @@ describe("mapTopic", () => {
     ]);
   });
 
+  it("removes leading Markdown heading markers from conversation titles", () => {
+    const objects = expectOk(
+      mapTopic(
+        {
+          id: 123,
+          title: "#RFC-132: Remove legacy libraries",
+          slug: "rfc-132-remove-legacy-libraries",
+          created_at: "2026-09-16T10:00:00.000Z",
+          last_posted_at: "2026-09-16T10:00:00.000Z",
+          closed: false,
+          posts: [
+            {
+              id: 456,
+              post_number: 1,
+              username: "ada",
+              cooked: "<p>Proposal</p>",
+              created_at: "2026-09-16T10:00:00.000Z",
+              updated_at: "2026-09-16T10:00:00.000Z",
+              version: 1,
+            },
+          ],
+        },
+        "https://community.example.com/",
+      ),
+    );
+
+    expect(objects[0]).toMatchObject({
+      displayName: "RFC-132: Remove legacy libraries",
+    });
+  });
+
   it("uses the supported schema and bounds conversation descriptions", () => {
     const objects = expectOk(
       mapTopic(

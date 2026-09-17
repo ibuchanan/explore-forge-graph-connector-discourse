@@ -1,10 +1,10 @@
+import type { types } from "@forge/teamwork-graph";
 import {
   ok,
   type ProblemDetails,
   type Result,
   StandardError,
 } from "@forge-ahead/errors";
-import type { types } from "@forge/teamwork-graph";
 
 import type { operations } from "./api/types";
 

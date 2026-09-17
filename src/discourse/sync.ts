@@ -1,3 +1,4 @@
+import type { types } from "@forge/teamwork-graph";
 import {
   err,
   fromPromise,
@@ -6,7 +7,6 @@ import {
   type Result,
   toProblemDetails,
 } from "@forge-ahead/errors";
-import type { types } from "@forge/teamwork-graph";
 
 import { mapTopic, type Topic } from "./map-topic";
 

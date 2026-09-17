@@ -58,93 +58,88 @@ export function createDiscourseClient(baseUrl: string) {
 }
 
 export function createDiscourseTopicSource(client: DiscourseClient) {
+  async function request<T>(
+    endpoint: string,
+    options: object,
+    context: Record<string, unknown>,
+    detail: string,
+  ): Promise<Result<T, ProblemDetails>> {
+    const result = await fromPromise(
+      // openapi-fetch cannot correlate a runtime endpoint with its endpoint-specific options.
+      client.GET(endpoint as never, options as never),
+      (error) => toProblemDetails(error, 502, detail),
+    );
+    if (result.isErr()) return err(result.error);
+
+    const { data, error, response } = result.value as {
+      data?: T;
+      error?: unknown;
+      response?: Response;
+    };
+    if (response?.status === 429) {
+      log.warn(
+        {
+          endpoint,
+          ...context,
+          retryAfter: response.headers.get("retry-after"),
+          rateLimitRemaining: response.headers.get("x-ratelimit-remaining"),
+        },
+        "Discourse rate limit reached",
+      );
+      return err(problemDetails(429, "Discourse rate limit reached"));
+    }
+    if (error || !data) {
+      log.warn(
+        { endpoint, ...context, status: response?.status },
+        "Discourse topic request failed",
+      );
+      return unavailable(detail);
+    }
+    return ok(data);
+  }
+
   return {
     async listLatestTopics(
       page: number,
     ): Promise<Result<TopicPage, ProblemDetails>> {
-      const result = await fromPromise(
-        client.GET("/latest.json", {
-          params: { query: { page, per_page: 100 } },
-        } as never),
-        (error) =>
-          toProblemDetails(
-            error,
-            502,
-            "Could not list latest Discourse topics",
-          ),
+      const result = await request<LatestTopicsResponse>(
+        "/latest.json",
+        { params: { query: { page, per_page: 100 } } },
+        { page },
+        "Could not list latest Discourse topics",
       );
       if (result.isErr()) return err(result.error);
 
-      const { data, error, response } = result.value as {
-        data?: LatestTopicsResponse;
-        error?: unknown;
-        response?: Response;
-      };
-      if (response?.status === 429) {
+      const topicList = result.value.topic_list;
+      const topics = topicList?.topics;
+      if (!topics) {
         log.warn(
-          {
-            endpoint: "/latest.json",
-            page,
-            retryAfter: response.headers.get("retry-after"),
-            rateLimitRemaining: response.headers.get("x-ratelimit-remaining"),
-          },
-          "Discourse rate limit reached",
-        );
-        return err(problemDetails(429, "Discourse rate limit reached"));
-      }
-      if (error || !data?.topic_list?.topics) {
-        log.warn(
-          { endpoint: "/latest.json", page, status: response?.status },
+          { endpoint: "/latest.json", page },
           "Discourse topic listing failed",
         );
         return unavailable("Could not list latest Discourse topics");
       }
-
-      const ids = data.topic_list.topics.flatMap(({ id }) =>
+      const ids = topics.flatMap(({ id }) =>
         typeof id === "number" ? [id] : [],
       );
       return ok({
         ids,
         hasMore: Boolean(
-          (data.topic_list as { more_topics_url?: string }).more_topics_url,
+          (topicList as { more_topics_url?: string }).more_topics_url,
         ),
       });
     },
 
     async getTopic(id: number): Promise<Result<Topic, ProblemDetails>> {
-      const result = await fromPromise(
-        client.GET("/t/{id}.json", {
-          params: { path: { id: String(id) } },
-        } as never),
-        (error) =>
-          toProblemDetails(error, 502, `Could not get Discourse topic ${id}`),
+      const result = await request<TopicResponse>(
+        "/t/{id}.json",
+        { params: { path: { id: String(id) } } },
+        { topicId: id },
+        `Could not get Discourse topic ${id}`,
       );
       if (result.isErr()) return err(result.error);
 
-      const { data, error, response } = result.value as {
-        data?: TopicResponse;
-        error?: unknown;
-        response?: Response;
-      };
-      if (response?.status === 429) {
-        log.warn(
-          {
-            endpoint: "/t/{id}.json",
-            topicId: id,
-            retryAfter: response.headers.get("retry-after"),
-            rateLimitRemaining: response.headers.get("x-ratelimit-remaining"),
-          },
-          "Discourse rate limit reached",
-        );
-        return err(problemDetails(429, "Discourse rate limit reached"));
-      }
-      if (error || !data) {
-        log.warn(
-          { endpoint: "/t/{id}.json", topicId: id, status: response?.status },
-          "Discourse topic request failed",
-        );
-        return unavailable(`Could not get Discourse topic ${id}`);
-      }
+      const data = result.value;
       return ok({
         id: data.id,
         title: data.title,

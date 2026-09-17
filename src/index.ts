@@ -6,6 +6,8 @@ import {
 } from "@forge-ahead/errors";
 import { log, logResult } from "@forge-ahead/logging";
 
+import { createDiscourseClient } from "./discourse";
+
 type ConnectionChange = {
   action: string;
   connectionId: string;
@@ -14,6 +16,15 @@ type ConnectionChange = {
 type ConnectionChangeResponse =
   | { success: true }
   | { success: false; error: ProblemDetails };
+
+function connectionCheckFailure(): ConnectionChangeResponse {
+  return StandardError.getOrDefault(502)
+    .error("Discourse connection check failed")
+    .match(
+      () => ({ success: true }),
+      (error) => ({ success: false, error }),
+    );
+}
 
 function validateConnectionChange(
   event: unknown,
@@ -35,7 +46,9 @@ function validateConnectionChange(
   return ok({ action, connectionId });
 }
 
-export function onConnectionChange(event: unknown): ConnectionChangeResponse {
+export async function onConnectionChange(
+  event: unknown,
+): Promise<ConnectionChangeResponse> {
   const result = validateConnectionChange(event);
 
   logResult(log, result, {
@@ -45,7 +58,19 @@ export function onConnectionChange(event: unknown): ConnectionChangeResponse {
   });
 
   return result.match(
-    () => ({ success: true }),
-    (error) => ({ success: false, error }),
+    async () => {
+      try {
+        const { error } = await createDiscourseClient().GET("/site.json");
+
+        if (error) {
+          return connectionCheckFailure();
+        }
+
+        return { success: true };
+      } catch {
+        return connectionCheckFailure();
+      }
+    },
+    async (error) => ({ success: false, error }),
   );
 }

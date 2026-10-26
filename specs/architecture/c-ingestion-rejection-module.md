@@ -4,14 +4,14 @@
 
 ## Files
 
-| File | Lines | Role |
-|------|-------|------|
-| `src/index.ts` | 52–54 | `IngestionRejection` type |
-| `src/index.ts` | 56–90 | `summarizeIngestionFailure` — the string surgery |
-| `src/index.ts` | 251–275 | the publish adapter that flattens the response, then calls it |
-| `test/index.test.ts` | 132–198 | a test of this module wearing 60 lines of `taskRunner` scaffolding |
-| `src/discourse/ingestion-rejection.ts` | — | new |
-| `test/discourse-ingestion-rejection.test.ts` | — | new |
+| File                                         | Lines   | Role                                                               |
+| -------------------------------------------- | ------- | ------------------------------------------------------------------ |
+| `src/index.ts`                               | 52–54   | `IngestionRejection` type                                          |
+| `src/index.ts`                               | 56–90   | `summarizeIngestionFailure` — the string surgery                   |
+| `src/index.ts`                               | 251–275 | the publish adapter that flattens the response, then calls it      |
+| `test/index.test.ts`                         | 132–198 | a test of this module wearing 60 lines of `taskRunner` scaffolding |
+| `src/discourse/ingestion-rejection.ts`       | —       | new                                                                |
+| `test/discourse-ingestion-rejection.test.ts` | —       | new                                                                |
 
 Shares `src/index.ts` with spec B. Doing B first is easier; they do not conflict
 textually (B touches 295–344, C touches 52–90 and 251–275).
@@ -63,7 +63,7 @@ already has.
 ### Interface sketch
 
 Not final. Settle it with `/grilling`; the shape of the response type is the
-main unknown — see *Open questions*.
+main unknown — see _Open questions_.
 
 ```ts
 /**

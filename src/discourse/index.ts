@@ -2,17 +2,16 @@ import {
   err,
   fromPromise,
   fromThrowable,
-  problemDetails,
   ok,
   type ProblemDetails,
+  problemDetails,
   type Result,
   StandardError,
   toProblemDetails,
 } from "@forge-ahead/errors";
-import createClient from "openapi-fetch";
-
-import type { operations, paths } from "./api/types";
 import { log } from "@forge-ahead/logging";
+import createClient from "openapi-fetch";
+import type { operations, paths } from "./api/types";
 
 import { forgeFetch } from "./forge-fetch";
 import type { Topic, TopicPage } from "./topic-source";

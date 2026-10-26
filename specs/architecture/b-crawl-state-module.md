@@ -4,15 +4,15 @@
 
 ## Files
 
-| File | Lines | Role |
-|------|-------|------|
-| `src/index.ts` | 35–43 | `CrawlState` type |
-| `src/index.ts` | 47 | `crawlStateKey` |
-| `src/index.ts` | 233–243 | read Crawl state, derive `page` |
-| `src/index.ts` | 295–344 | **the rule, written inline** |
-| `test/index.test.ts` | 96–130 | the only test that reaches it, via three module mocks |
-| `src/discourse/crawl-state.ts` | — | new |
-| `test/discourse-crawl-state.test.ts` | — | new |
+| File                                 | Lines   | Role                                                  |
+| ------------------------------------ | ------- | ----------------------------------------------------- |
+| `src/index.ts`                       | 35–43   | `CrawlState` type                                     |
+| `src/index.ts`                       | 47      | `crawlStateKey`                                       |
+| `src/index.ts`                       | 233–243 | read Crawl state, derive `page`                       |
+| `src/index.ts`                       | 295–344 | **the rule, written inline**                          |
+| `test/index.test.ts`                 | 96–130  | the only test that reaches it, via three module mocks |
+| `src/discourse/crawl-state.ts`       | —       | new                                                   |
+| `test/discourse-crawl-state.test.ts` | —       | new                                                   |
 
 ## Problem
 
@@ -56,7 +56,7 @@ rule moves behind one interface.
 ### Interface sketch
 
 Not final. Settle it with `/grilling` before writing the implementation; see
-*Open questions* below.
+_Open questions_ below.
 
 ```ts
 export type CrawlState = {
@@ -97,8 +97,12 @@ Lines 295–344 collapse to roughly:
 advanced = synced.isErr()
   ? err(synced.error)
   : await fromPromise(
-      kvs.set(crawlStateKey(request.connectionId), advance(crawlState.value, synced.value)),
-      (error) => toProblemDetails(error, 502, "Could not save Discourse crawl state"),
+      kvs.set(
+        crawlStateKey(request.connectionId),
+        advance(crawlState.value, synced.value),
+      ),
+      (error) =>
+        toProblemDetails(error, 502, "Could not save Discourse crawl state"),
     );
 ```
 
@@ -133,7 +137,7 @@ New `test/discourse-crawl-state.test.ts`, no mocks:
 1. **First page, more to come** — `advance(undefined, progress)` returns
    `nextPage: 1` with the page's own totals as the cumulative totals.
 2. **Second page accumulates** — stored totals plus new progress sum correctly,
-   and `nextPage` advances. *This is the case with no coverage today.*
+   and `nextPage` advances. _This is the case with no coverage today._
 3. **Temporal window widens** — a stored window and a new page that extends it
    in both directions yield the outer bounds.
 4. **Temporal window survives a page with no posts** — a page whose progress

@@ -54,6 +54,6 @@ not an optional display feature.
 
 ## Where this leads
 
-Permissions answer: *Who may use this connected data?* The access decision is
+Permissions answer: _Who may use this connected data?_ The access decision is
 implemented on graph objects. See [Data payload](3-data-payload.md) for the
 object structure that carries that data.

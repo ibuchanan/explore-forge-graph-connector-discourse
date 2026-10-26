@@ -4,8 +4,8 @@ Supplychain Graph is a Forge application for modelling and coordinating the
 collaboration around an Epic across supplier and consumer tenants.
 
 > **Status:** early implementation. The initial work establishes the local
-developer loop and the pure collaboration contract before the collaboration
-features are added to the Jira-facing panel.
+> developer loop and the pure collaboration contract before the collaboration
+> features are added to the Jira-facing panel.
 
 ## Verify the project
 

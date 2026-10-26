@@ -38,18 +38,18 @@ Two principles the specs lean on:
 Recommended sequence. The dependencies are soft — each spec notes any real
 coupling.
 
-| # | Spec | Strength | Why here |
-|---|------|----------|----------|
-| 1 | [B — Crawl state module](b-crawl-state-module.md) | Strong | The only candidate sitting on untested behaviour |
-| 2 | [C — Ingestion rejection module](c-ingestion-rejection-module.md) | Strong | Same file as B, immediate test payoff |
-| 3 | [A — Trust the Topic source seam](a-trust-the-topic-source-seam.md) | Strong | Deletes branches; pairs with E |
-| 4 | [E — Own the seam types](e-own-the-seam-types.md) | Worth exploring | Cheap, improves navigability; do with A |
-| 5 | [D — Collapse the Discourse requests](d-collapse-discourse-requests.md) | Worth exploring | Largest change, no untested rule behind it |
-| 6 | [F — forge-fetch is not a seam](f-forge-fetch-is-not-a-seam.md) | Speculative | Recorded for completeness; **not** recommended |
+| #   | Spec                                                                    | Strength        | Why here                                         |
+| --- | ----------------------------------------------------------------------- | --------------- | ------------------------------------------------ |
+| 1   | [B — Crawl state module](b-crawl-state-module.md)                       | Strong          | The only candidate sitting on untested behaviour |
+| 2   | [C — Ingestion rejection module](c-ingestion-rejection-module.md)       | Strong          | Same file as B, immediate test payoff            |
+| 3   | [A — Trust the Topic source seam](a-trust-the-topic-source-seam.md)     | Strong          | Deletes branches; pairs with E                   |
+| 4   | [E — Own the seam types](e-own-the-seam-types.md)                       | Worth exploring | Cheap, improves navigability; do with A          |
+| 5   | [D — Collapse the Discourse requests](d-collapse-discourse-requests.md) | Worth exploring | Largest change, no untested rule behind it       |
+| 6   | [F — forge-fetch is not a seam](f-forge-fetch-is-not-a-seam.md)         | Speculative     | Recorded for completeness; **not** recommended   |
 
 ## Cross-cutting: the domain glossary describes a different project
 
-`CONTEXT.md` and `README.md` define *Supplychain Graph* — Site relationship,
+`CONTEXT.md` and `README.md` define _Supplychain Graph_ — Site relationship,
 Authorization lease, Pairing, Source Epic, Starter projection. **None of those
 terms appears anywhere in `src/`.**
 

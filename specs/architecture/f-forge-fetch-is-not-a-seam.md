@@ -8,11 +8,11 @@
 
 ## Files
 
-| File | Lines | Role |
-|------|-------|------|
-| `src/discourse/forge-fetch.ts` | 1–3 | the entire module |
-| `src/discourse/index.ts` | 57 | its only consumer |
-| `test/discourse.test.ts` | 8 | mocks `@forge/api` directly, reaching past it |
+| File                           | Lines | Role                                          |
+| ------------------------------ | ----- | --------------------------------------------- |
+| `src/discourse/forge-fetch.ts` | 1–3   | the entire module                             |
+| `src/discourse/index.ts`       | 57    | its only consumer                             |
+| `test/discourse.test.ts`       | 8     | mocks `@forge/api` directly, reaching past it |
 
 ## The module
 
@@ -34,7 +34,7 @@ Two reasons, and both hold up:
 
 2. **It is not the test seam either.** `test/discourse.test.ts:8` does
    `vi.mock("@forge/api", () => ({ fetch }))` — it substitutes the dependency
-   *underneath* this module, not at it. Nothing substitutes at this seam in
+   _underneath_ this module, not at it. Nothing substitutes at this seam in
    production or in tests. Under "one adapter is a hypothetical seam, two
    adapters is a real one", there are **zero** adapters here.
 
@@ -81,8 +81,8 @@ investigate one, investigate all three together.
 
 Fine — it is a two-line change with no test impact. But record an ADR either
 way, because the next architecture review will otherwise re-derive this whole
-analysis from scratch. Frame it as: *"`forge-fetch.ts` is deliberately a shallow
-named cast, not a seam"*, or the converse. Use the `/domain-modeling` skill,
+analysis from scratch. Frame it as: _"`forge-fetch.ts` is deliberately a shallow
+named cast, not a seam"_, or the converse. Use the `/domain-modeling` skill,
 which covers ADRs. `docs/adr/` does not exist yet; this would be its first
 entry.
 

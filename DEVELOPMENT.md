@@ -21,16 +21,16 @@ The repository commits `package-lock.json`; use npm to keep it current.
 
 ## Everyday loop
 
-| Command | Purpose |
-| --- | --- |
-| `npm run test` | Run project-owned tests once. |
-| `npm run test:watch` | Re-run project-owned tests while editing. |
-| `npm run typecheck` | Type-check production application TypeScript. |
-| `npm run lint` | Run prelint checks, Biome, Forge lint, and type-checking. |
-| `npm run format` | Apply Biome formatting. |
-| `npm run format:check` | Verify formatting without writing. |
-| `npm run build` | Compile the TypeScript application into `dist/`. |
-| `npm run check` | Run the normal pre-push quality gate. |
+| Command                | Purpose                                                   |
+| ---------------------- | --------------------------------------------------------- |
+| `npm run test`         | Run project-owned tests once.                             |
+| `npm run test:watch`   | Re-run project-owned tests while editing.                 |
+| `npm run typecheck`    | Type-check production application TypeScript.             |
+| `npm run lint`         | Run prelint checks, Biome, Forge lint, and type-checking. |
+| `npm run format`       | Apply Biome formatting.                                   |
+| `npm run format:check` | Verify formatting without writing.                        |
+| `npm run build`        | Compile the TypeScript application into `dist/`.          |
+| `npm run check`        | Run the normal pre-push quality gate.                     |
 
 The `vendor/` directory is reference material, not a workspace. Root commands
 must not lint, type-check, or run its test suites.

@@ -8,27 +8,27 @@ Cheaper after [spec A](a-trust-the-topic-source-seam.md), which reduces the
 
 ## Files
 
-| File | Lines | Role |
-|------|-------|------|
-| `src/discourse/index.ts` | 60–112 | `listLatestTopics` |
-| `src/discourse/index.ts` | 114–157 | `getTopic` — the same six steps again |
-| `src/discourse/index.ts` | 21–24 | the response type aliases |
-| `src/discourse/sync.ts` | 78, 87 | consumers reading `status === 429` |
-| `test/discourse.test.ts` | 1–72 | covers `discourseBaseUrl` and `createDiscourseClient` — **neither method** |
+| File                     | Lines   | Role                                                                       |
+| ------------------------ | ------- | -------------------------------------------------------------------------- |
+| `src/discourse/index.ts` | 60–112  | `listLatestTopics`                                                         |
+| `src/discourse/index.ts` | 114–157 | `getTopic` — the same six steps again                                      |
+| `src/discourse/index.ts` | 21–24   | the response type aliases                                                  |
+| `src/discourse/sync.ts`  | 78, 87  | consumers reading `status === 429`                                         |
+| `test/discourse.test.ts` | 1–72    | covers `discourseBaseUrl` and `createDiscourseClient` — **neither method** |
 
 ## Problem
 
 `createDiscourseTopicSource` returns two methods that repeat the same six steps
 and differ only in endpoint, log field name, and projection:
 
-| Step | `listLatestTopics` | `getTopic` |
-|------|--------------------|------------|
-| wrap the call | line 65 | line 115 |
-| cast params `as never` | line 68 | line 118 |
-| destructure `data`/`error`/`response` | 78–82 | 124–128 |
-| `429` → warn with `retry-after` + `x-ratelimit-remaining`, return `err(429)` | 83–94 | 129–140 |
-| `error \|\| !data` → warn, return `unavailable(...)` | 95–101 | 141–147 |
-| project the payload | 103–111 | 148–156 |
+| Step                                                                         | `listLatestTopics` | `getTopic` |
+| ---------------------------------------------------------------------------- | ------------------ | ---------- |
+| wrap the call                                                                | line 65            | line 115   |
+| cast params `as never`                                                       | line 68            | line 118   |
+| destructure `data`/`error`/`response`                                        | 78–82              | 124–128    |
+| `429` → warn with `retry-after` + `x-ratelimit-remaining`, return `err(429)` | 83–94              | 129–140    |
+| `error \|\| !data` → warn, return `unavailable(...)`                         | 95–101             | 141–147    |
+| project the payload                                                          | 103–111            | 148–156    |
 
 Everything above the last row is identical in substance. The `429` block in
 particular is 12 lines duplicated with three tokens changed.
@@ -72,7 +72,9 @@ deeper, not the interface.
 The external interface is unchanged:
 
 ```ts
-export function createDiscourseTopicSource(client: DiscourseClient): TopicSource;
+export function createDiscourseTopicSource(
+  client: DiscourseClient,
+): TopicSource;
 ```
 
 The internal seam is new and private to the implementation:

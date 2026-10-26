@@ -52,6 +52,6 @@ and stop external webhooks or scheduled work.
 
 ## Where this leads
 
-Infrastructure answers: *Which external system is connected, and who manages
-that connection?* The next question is more important for users: *Who may see
-the data that the connection provides?* See [Permissions](2-permissions.md).
+Infrastructure answers: _Which external system is connected, and who manages
+that connection?_ The next question is more important for users: _Who may see
+the data that the connection provides?_ See [Permissions](2-permissions.md).

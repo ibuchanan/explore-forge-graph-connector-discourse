@@ -8,14 +8,14 @@ changes their address.
 
 ## Files
 
-| File | Lines | Role |
-|------|-------|------|
-| `src/discourse/sync.ts` | 16–24 | `TopicSource` and `TopicPublisher` interfaces |
-| `src/discourse/sync.ts` | 62–68 | `listLatestTopics` double unwrap |
-| `src/discourse/sync.ts` | 74–94 | `getTopic` double unwrap, **two identical skip blocks** |
-| `src/discourse/sync.ts` | 108–116 | `publish` double unwrap |
-| `src/discourse/index.ts` | 65, 115 | the adapter's own `fromPromise` — already there |
-| `src/index.ts` | 251–261 | the publish adapter's `fromPromise` — already there |
+| File                     | Lines   | Role                                                    |
+| ------------------------ | ------- | ------------------------------------------------------- |
+| `src/discourse/sync.ts`  | 16–24   | `TopicSource` and `TopicPublisher` interfaces           |
+| `src/discourse/sync.ts`  | 62–68   | `listLatestTopics` double unwrap                        |
+| `src/discourse/sync.ts`  | 74–94   | `getTopic` double unwrap, **two identical skip blocks** |
+| `src/discourse/sync.ts`  | 108–116 | `publish` double unwrap                                 |
+| `src/discourse/index.ts` | 65, 115 | the adapter's own `fromPromise` — already there         |
+| `src/index.ts`           | 251–261 | the publish adapter's `fromPromise` — already there     |
 
 ## Problem
 
@@ -33,7 +33,7 @@ The interfaces say so too: `TopicSource.listLatestTopics` is declared
 `TopicPublisher` is declared `Promise<Result<void, ProblemDetails>>`
 (`sync.ts:21–24`).
 
-`sync.ts` does not trust any of it. It wraps every call in a *second*
+`sync.ts` does not trust any of it. It wraps every call in a _second_
 `fromPromise`, producing `Result<Result<T, ProblemDetails>, ProblemDetails>` and
 forcing two unwraps per call:
 
@@ -53,7 +53,7 @@ Three consequences:
    failed". Both push to `skippedTopicIds`, both check `status === 429`, both
    call `log.warn` with the identical five-field payload and the identical
    message `"Discourse topic skipped after fetch failure"`. Nothing is broken
-   today *because* they are identical — which is exactly the hazard. They must
+   today _because_ they are identical — which is exactly the hazard. They must
    be kept in step by hand, and there is no test that would notice if they
    drifted.
 3. **The nested `Result` is load-bearing noise.** `src/index.ts:245` has to
@@ -90,7 +90,7 @@ type TopicSource = {
 ```
 
 That comment is not decoration — under the `/codebase-design` definition, the
-invariant and the error modes *are* part of the interface, as much as the
+invariant and the error modes _are_ part of the interface, as much as the
 signature is.
 
 ### What changes in `sync.ts`

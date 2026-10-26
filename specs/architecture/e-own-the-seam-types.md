@@ -7,22 +7,22 @@ what these declarations mean; E changes where they live.
 
 ## Files
 
-| File | Lines | Role |
-|------|-------|------|
-| `src/discourse/map-topic.ts` | 28–38 | `Topic` — declared here, produced by the adapter |
-| `src/discourse/map-topic.ts` | 15–26 | `TopicPost` — the post projection `Topic` depends on |
-| `src/discourse/sync.ts` | 14 | `TopicPage` — declared here, produced by the adapter |
-| `src/discourse/sync.ts` | 16–19 | `TopicSource` — not exported |
-| `src/discourse/sync.ts` | 21–24 | `TopicPublisher` — not exported |
-| `src/discourse/index.ts` | 18–19 | the adapter importing both from its consumers |
-| `src/discourse/topic-source.ts` | — | new |
+| File                            | Lines | Role                                                 |
+| ------------------------------- | ----- | ---------------------------------------------------- |
+| `src/discourse/map-topic.ts`    | 28–38 | `Topic` — declared here, produced by the adapter     |
+| `src/discourse/map-topic.ts`    | 15–26 | `TopicPost` — the post projection `Topic` depends on |
+| `src/discourse/sync.ts`         | 14    | `TopicPage` — declared here, produced by the adapter |
+| `src/discourse/sync.ts`         | 16–19 | `TopicSource` — not exported                         |
+| `src/discourse/sync.ts`         | 21–24 | `TopicPublisher` — not exported                      |
+| `src/discourse/index.ts`        | 18–19 | the adapter importing both from its consumers        |
+| `src/discourse/topic-source.ts` | —     | new                                                  |
 
 ## Problem
 
 The contract that crosses this seam is spread across the three modules that use
 it, and the dependency arrows run backwards.
 
-`src/discourse/index.ts` is the HTTP adapter. It *produces* `Topic` and
+`src/discourse/index.ts` is the HTTP adapter. It _produces_ `Topic` and
 `TopicPage`. It imports both from elsewhere:
 
 ```ts
@@ -33,8 +33,8 @@ import type { TopicPage } from "./sync";
 
 So:
 
-- `Topic` is declared in `map-topic.ts`, the module that *consumes* a `Topic`.
-- `TopicPage` is declared in `sync.ts`, the module that *consumes* a
+- `Topic` is declared in `map-topic.ts`, the module that _consumes_ a `Topic`.
+- `TopicPage` is declared in `sync.ts`, the module that _consumes_ a
   `TopicPage`.
 - `sync.ts` imports `mapTopic` and `Topic` from `map-topic.ts`, and holds a
   `TopicSource` it never names publicly.
